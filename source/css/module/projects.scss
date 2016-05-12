@@ -1,0 +1,48 @@
+/**
+ * @module:   projects
+ * @js:       ./source/js/module/projects/projects.js
+ * @html:     ./source/js/module/projects/projects.html
+ */
+
+
+@include module("projects") {
+    display: block;
+    margin: 0 auto;
+    vertical-align: top;
+    width: 300px;
+    padding-bottom: 25px;
+    text-align: center;
+
+    .websiteThumbnail{
+        height: 110px;
+        width: 220px;
+        border: 1px solid white;
+        margin: 0 auto;
+
+        &:hover{
+            background-color: rgba(1,2,1,0.8);
+            z-index: 2;
+        }
+
+        &.websiteThumbnail-tfl{
+            background: url(../img/tfl-thumbnail.jpg) no-repeat;
+            background-size: 100% auto;
+        }
+        &.websiteThumbnail-lowe{
+            background: url(../img/lowe-thumbnail.jpg) no-repeat;
+            background-size: 100% auto;
+        }
+        &.websiteThumbnail-nepal{
+            background: url(../img/nepal-thumbnail.jpg) no-repeat;
+            background-size: 100% auto;
+        }
+        &.websiteThumbnail-millenials{
+            background: url(../img/millenials-thumbnail.jpg) no-repeat;
+            background-size: 100% auto;
+        }
+    }
+
+    h3{
+        padding-top: 10px;
+    }
+}

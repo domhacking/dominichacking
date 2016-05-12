@@ -1,0 +1,176 @@
+.front{
+    height: 100%;
+}
+
+
+.flip-container{
+    height:100%;
+    width:100%;
+    perspective: 1000;
+}
+
+.flipper{
+    position: relative;
+    transition: 1.6s;
+    transform-style: preserve-3d;
+    transform-origin: 100% 50%;
+    height: 100%;
+    width: 100%;
+
+    &.change{
+        transform: rotateX(180deg);
+    }
+}
+
+.front{
+    background-color: $color-background;
+    backface-visibility: hidden;
+    height: 100%;
+    left: 0;
+    position: absolute;
+    transform: rotateX(0deg);
+    top:0;
+    width: 100%;
+    z-index:2;
+
+    &.opening{
+            display: table;
+            height: 100%;
+            width: 100%;
+    }
+}
+
+.back{
+background-color: $color-background;
+backface-visibility: hidden;
+height: 100%;
+left: 0;
+overflow:hidden;
+padding: 10px;
+position: absolute;
+transform: rotateX(180deg);
+top:0;
+width: 100%;
+
+
+section{
+    display: none;
+
+    &.tab-pane{
+        height: 60%;
+        width: 100%;
+        max-width: 355px;
+        margin: 0 auto;
+        padding-top: 30px;
+
+        &.tab-pane--projects, &.tab-pane--play{
+            text-align: center;
+            height: 70%;
+
+            .content{
+                .content--container{
+                    width: 100%;
+                }
+            }
+
+        }
+
+        .content{
+            display: table-cell;
+            vertical-align: middle;
+
+            .content--container{
+                width: 460px;
+                margin: 0 auto;
+
+            }
+        }
+    }
+
+    &.active{
+        display: table !important;
+    }
+
+    p{
+        padding-top: 2px;
+    }
+}
+
+
+.back--button_home{
+    position: absolute;
+    bottom: -10px;
+    right: -30px;
+    transform: rotate(-45deg);
+    background-color: $color-background-grey;
+    padding: 5px 25px 30px 25px;
+    font-size: 10px;
+
+    &:hover{
+        color: $redJavascript;
+        background-color: $lightGrey;
+    }
+}
+}
+
+
+
+@media screen and (min-width:550px){
+.back{
+    section{
+        &.tab-pane{
+            max-width: none;
+            width: 100%;
+
+            .project{
+                width: 300px;
+                display: inline-block;
+
+            }
+        }
+
+        p{
+            padding-top: 4px;
+        }
+    }
+}
+}
+
+
+@media screen and (min-width:800px){
+.back{
+    section{
+        &.tab-pane{
+            .content{
+                min-height: 700px;
+
+                .project{
+                    width: 40%;
+                    .websiteThumbnail{
+                        width: 300px;
+                        height: 150px;
+                    }
+                }
+            }
+
+        }
+    }
+}
+}
+
+@media screen and (min-width:1200px){
+.back{
+    section{
+        &.tab-pane{
+            .content{
+                .project{
+                    .websiteThumbnail{
+                        width: 450px;
+                        height: 200px;
+                    }
+                }
+            }
+        }
+    }
+}
+}

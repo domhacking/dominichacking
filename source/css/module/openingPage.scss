@@ -1,0 +1,43 @@
+/**
+ * @module:   openingPage
+ * @js:       ./source/js/module/openingPage/openingPage.js
+ * @html:     ./source/js/module/openingPage/openingPage.html
+ */
+
+
+@include module("openingPage") {
+    height: 100%;
+
+	.content{
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        height: 75px;
+
+        &__text{
+            font-weight: normal;
+            color: $font-color;
+            font-family: $opening-font;
+            font-size: 30px;
+            padding-bottom: 15px;
+            text-align: center;
+        }
+	}
+
+	&__button{
+		bottom: 5%;
+		cursor: pointer;
+		display: block;
+		font-size: 16px;
+		margin-top: 80px;
+		position: absolute;
+		text-align: center;
+		width: 100%;
+
+		&:hover{
+			animation: none;
+			color: $redJavascript;
+		}
+	}
+}

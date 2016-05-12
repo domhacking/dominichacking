@@ -1,0 +1,28 @@
+/**
+ * @module:   nav
+ * @js:       ./source/js/module/nav/nav.js
+ * @html:     ./source/js/module/nav/nav.html
+ */
+
+
+@include module("nav") {
+    &__heading{
+        font-family: $opening-font;
+    	color: $font-color;
+        font-size: 40px;
+    	text-align: center;
+        font-weight: bold;
+    }
+
+    &__items{
+        display: inline-block;
+        cursor: pointer;
+        font-size: 25px;
+        padding: 5px 20px;
+        text-align: center;
+
+        &:active{
+          color: $redJavascript;
+        }
+    }
+}

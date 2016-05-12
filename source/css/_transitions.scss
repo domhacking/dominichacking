@@ -1,0 +1,43 @@
+.blinker{
+	animation: blink linear 2s infinite;
+}
+
+@keyframes blink{
+	0%{ opacity: 0}
+	50%{ opacity: 1}
+	100%{ opacity: 0}
+}
+
+.scale{
+	animation: flipperScale linear 0.6s;
+}
+
+
+@keyframes flipScale{
+	0%{
+		transform: scale(1,1);
+	}
+
+	50%{
+		transform: scale(0.7,0.7);
+	}
+
+	100%{
+		transform: scale(1,1);
+	}
+}
+
+
+.change{
+	animation: flipperRotate linear 1.6;
+}
+
+@keyframes flipperRotate{
+	0% {
+		transform: rotateX(180deg);
+	}
+
+	100%{
+		transform: rotateX(0deg);
+	}
+}

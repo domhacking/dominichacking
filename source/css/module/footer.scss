@@ -1,0 +1,43 @@
+/**
+ * @module:   footer
+ * @js:       ./source/js/module/footer/footer.js
+ * @html:     ./source/js/module/footer/footer.html
+ */
+
+
+@include module("footer") {
+    position: fixed;
+    display: block;
+    bottom: 5px;
+    width: 100%;
+    .footer-content{
+        width:80%;
+        text-align: center;
+        border-top: 1px solid $white;
+        padding: 20px 0px;
+        margin: 0 auto;
+
+        p{
+            display: inline-block;
+            // margin-left: -30px;
+
+            a{
+                font-size: 12px;
+                width: 80px;
+                // margin-left: 20px;
+
+                &.github{
+                    background: url('../img/icon-github.png') no-repeat;
+                    background-size: 15px 15px;
+                    padding-left:5px;
+                }
+                &.twitter{
+                    background: url('../img/icon-twitter.png') no-repeat;
+                    background-size: 15px 15px;
+                    padding-left:5px;
+
+                }
+            }
+        }
+    }
+}
