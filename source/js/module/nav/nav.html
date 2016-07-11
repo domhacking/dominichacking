@@ -1,15 +1,23 @@
 <!--
-  @module:   nav
-  @scss:     ./source/css/module/nav.scss
-  @js:       ./source/js/module/nav/nav.js
+@module:   nav
+@scss:     ./source/css/module/nav.scss
+@js:       ./source/js/module/nav/nav.js
 -->
 
 <div class="nav">
-  <a href="/" class="nav__heading">DOMINIC HACKING</a>
+    <a href="/" class="nav__heading">DOMINIC HACKING</a>
 
-  <ul class="nav__container">
-      <li class="nav__items active">CONTACT</li>
-      <li class="nav__items">LANGUAGES</li>
-      <li class="nav__items">PROJECTS</li>
-  </ul>
+    <ul class="nav__container">
+
+        {{#nav}}
+            <li on-click="{{onClick}}" class="nav__items">{{navTab}}</li>
+        {{/}}
+    </ul>
 </div>
+
+
+
+
+<!-- <li class="nav__items">LANGUAGES</li> -->
+<!-- <li class="nav__items">PLAY</li> -->
+<!-- <li class="nav__items">DUMMY</li> -->

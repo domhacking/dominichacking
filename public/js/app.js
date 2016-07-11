@@ -27,7 +27,7 @@ domready(function() {
 
 });
 
-},{"./view/main.js":20,"domready":2}],2:[function(require,module,exports){
+},{"./view/main.js":27,"domready":2}],2:[function(require,module,exports){
 /*!
   * domready (c) Dustin Diaz 2014 - License MIT
   */
@@ -239,6 +239,1090 @@ domready(function() {
 })(this);
 
 },{}],4:[function(require,module,exports){
+(function (process){
+  /* globals require, module */
+
+  'use strict';
+
+  /**
+   * Module dependencies.
+   */
+
+  var pathtoRegexp = require('path-to-regexp');
+
+  /**
+   * Module exports.
+   */
+
+  module.exports = page;
+
+  /**
+   * Detect click event
+   */
+  var clickEvent = ('undefined' !== typeof document) && document.ontouchstart ? 'touchstart' : 'click';
+
+  /**
+   * To work properly with the URL
+   * history.location generated polyfill in https://github.com/devote/HTML5-History-API
+   */
+
+  var location = ('undefined' !== typeof window) && (window.history.location || window.location);
+
+  /**
+   * Perform initial dispatch.
+   */
+
+  var dispatch = true;
+
+
+  /**
+   * Decode URL components (query string, pathname, hash).
+   * Accommodates both regular percent encoding and x-www-form-urlencoded format.
+   */
+  var decodeURLComponents = true;
+
+  /**
+   * Base path.
+   */
+
+  var base = '';
+
+  /**
+   * Running flag.
+   */
+
+  var running;
+
+  /**
+   * HashBang option
+   */
+
+  var hashbang = false;
+
+  /**
+   * Previous context, for capturing
+   * page exit events.
+   */
+
+  var prevContext;
+
+  /**
+   * Register `path` with callback `fn()`,
+   * or route `path`, or redirection,
+   * or `page.start()`.
+   *
+   *   page(fn);
+   *   page('*', fn);
+   *   page('/user/:id', load, user);
+   *   page('/user/' + user.id, { some: 'thing' });
+   *   page('/user/' + user.id);
+   *   page('/from', '/to')
+   *   page();
+   *
+   * @param {string|!Function|!Object} path
+   * @param {Function=} fn
+   * @api public
+   */
+
+  function page(path, fn) {
+    // <callback>
+    if ('function' === typeof path) {
+      return page('*', path);
+    }
+
+    // route <path> to <callback ...>
+    if ('function' === typeof fn) {
+      var route = new Route(/** @type {string} */ (path));
+      for (var i = 1; i < arguments.length; ++i) {
+        page.callbacks.push(route.middleware(arguments[i]));
+      }
+      // show <path> with [state]
+    } else if ('string' === typeof path) {
+      page['string' === typeof fn ? 'redirect' : 'show'](path, fn);
+      // start [options]
+    } else {
+      page.start(path);
+    }
+  }
+
+  /**
+   * Callback functions.
+   */
+
+  page.callbacks = [];
+  page.exits = [];
+
+  /**
+   * Current path being processed
+   * @type {string}
+   */
+  page.current = '';
+
+  /**
+   * Number of pages navigated to.
+   * @type {number}
+   *
+   *     page.len == 0;
+   *     page('/login');
+   *     page.len == 1;
+   */
+
+  page.len = 0;
+
+  /**
+   * Get or set basepath to `path`.
+   *
+   * @param {string} path
+   * @api public
+   */
+
+  page.base = function(path) {
+    if (0 === arguments.length) return base;
+    base = path;
+  };
+
+  /**
+   * Bind with the given `options`.
+   *
+   * Options:
+   *
+   *    - `click` bind to click events [true]
+   *    - `popstate` bind to popstate [true]
+   *    - `dispatch` perform initial dispatch [true]
+   *
+   * @param {Object} options
+   * @api public
+   */
+
+  page.start = function(options) {
+    options = options || {};
+    if (running) return;
+    running = true;
+    if (false === options.dispatch) dispatch = false;
+    if (false === options.decodeURLComponents) decodeURLComponents = false;
+    if (false !== options.popstate) window.addEventListener('popstate', onpopstate, false);
+    if (false !== options.click) {
+      document.addEventListener(clickEvent, onclick, false);
+    }
+    if (true === options.hashbang) hashbang = true;
+    if (!dispatch) return;
+    var url = (hashbang && ~location.hash.indexOf('#!')) ? location.hash.substr(2) + location.search : location.pathname + location.search + location.hash;
+    page.replace(url, null, true, dispatch);
+  };
+
+  /**
+   * Unbind click and popstate event handlers.
+   *
+   * @api public
+   */
+
+  page.stop = function() {
+    if (!running) return;
+    page.current = '';
+    page.len = 0;
+    running = false;
+    document.removeEventListener(clickEvent, onclick, false);
+    window.removeEventListener('popstate', onpopstate, false);
+  };
+
+  /**
+   * Show `path` with optional `state` object.
+   *
+   * @param {string} path
+   * @param {Object=} state
+   * @param {boolean=} dispatch
+   * @param {boolean=} push
+   * @return {!Context}
+   * @api public
+   */
+
+  page.show = function(path, state, dispatch, push) {
+    var ctx = new Context(path, state);
+    page.current = ctx.path;
+    if (false !== dispatch) page.dispatch(ctx);
+    if (false !== ctx.handled && false !== push) ctx.pushState();
+    return ctx;
+  };
+
+  /**
+   * Goes back in the history
+   * Back should always let the current route push state and then go back.
+   *
+   * @param {string} path - fallback path to go back if no more history exists, if undefined defaults to page.base
+   * @param {Object=} state
+   * @api public
+   */
+
+  page.back = function(path, state) {
+    if (page.len > 0) {
+      // this may need more testing to see if all browsers
+      // wait for the next tick to go back in history
+      history.back();
+      page.len--;
+    } else if (path) {
+      setTimeout(function() {
+        page.show(path, state);
+      });
+    }else{
+      setTimeout(function() {
+        page.show(base, state);
+      });
+    }
+  };
+
+
+  /**
+   * Register route to redirect from one path to other
+   * or just redirect to another route
+   *
+   * @param {string} from - if param 'to' is undefined redirects to 'from'
+   * @param {string=} to
+   * @api public
+   */
+  page.redirect = function(from, to) {
+    // Define route from a path to another
+    if ('string' === typeof from && 'string' === typeof to) {
+      page(from, function(e) {
+        setTimeout(function() {
+          page.replace(/** @type {!string} */ (to));
+        }, 0);
+      });
+    }
+
+    // Wait for the push state and replace it with another
+    if ('string' === typeof from && 'undefined' === typeof to) {
+      setTimeout(function() {
+        page.replace(from);
+      }, 0);
+    }
+  };
+
+  /**
+   * Replace `path` with optional `state` object.
+   *
+   * @param {string} path
+   * @param {Object=} state
+   * @param {boolean=} init
+   * @param {boolean=} dispatch
+   * @return {!Context}
+   * @api public
+   */
+
+
+  page.replace = function(path, state, init, dispatch) {
+    var ctx = new Context(path, state);
+    page.current = ctx.path;
+    ctx.init = init;
+    ctx.save(); // save before dispatching, which may redirect
+    if (false !== dispatch) page.dispatch(ctx);
+    return ctx;
+  };
+
+  /**
+   * Dispatch the given `ctx`.
+   *
+   * @param {Context} ctx
+   * @api private
+   */
+  page.dispatch = function(ctx) {
+    var prev = prevContext,
+      i = 0,
+      j = 0;
+
+    prevContext = ctx;
+
+    function nextExit() {
+      var fn = page.exits[j++];
+      if (!fn) return nextEnter();
+      fn(prev, nextExit);
+    }
+
+    function nextEnter() {
+      var fn = page.callbacks[i++];
+
+      if (ctx.path !== page.current) {
+        ctx.handled = false;
+        return;
+      }
+      if (!fn) return unhandled(ctx);
+      fn(ctx, nextEnter);
+    }
+
+    if (prev) {
+      nextExit();
+    } else {
+      nextEnter();
+    }
+  };
+
+  /**
+   * Unhandled `ctx`. When it's not the initial
+   * popstate then redirect. If you wish to handle
+   * 404s on your own use `page('*', callback)`.
+   *
+   * @param {Context} ctx
+   * @api private
+   */
+  function unhandled(ctx) {
+    if (ctx.handled) return;
+    var current;
+
+    if (hashbang) {
+      current = base + location.hash.replace('#!', '');
+    } else {
+      current = location.pathname + location.search;
+    }
+
+    if (current === ctx.canonicalPath) return;
+    page.stop();
+    ctx.handled = false;
+    location.href = ctx.canonicalPath;
+  }
+
+  /**
+   * Register an exit route on `path` with
+   * callback `fn()`, which will be called
+   * on the previous context when a new
+   * page is visited.
+   */
+  page.exit = function(path, fn) {
+    if (typeof path === 'function') {
+      return page.exit('*', path);
+    }
+
+    var route = new Route(path);
+    for (var i = 1; i < arguments.length; ++i) {
+      page.exits.push(route.middleware(arguments[i]));
+    }
+  };
+
+  /**
+   * Remove URL encoding from the given `str`.
+   * Accommodates whitespace in both x-www-form-urlencoded
+   * and regular percent-encoded form.
+   *
+   * @param {string} val - URL component to decode
+   */
+  function decodeURLEncodedURIComponent(val) {
+    if (typeof val !== 'string') { return val; }
+    return decodeURLComponents ? decodeURIComponent(val.replace(/\+/g, ' ')) : val;
+  }
+
+  /**
+   * Initialize a new "request" `Context`
+   * with the given `path` and optional initial `state`.
+   *
+   * @constructor
+   * @param {string} path
+   * @param {Object=} state
+   * @api public
+   */
+
+  function Context(path, state) {
+    if ('/' === path[0] && 0 !== path.indexOf(base)) path = base + (hashbang ? '#!' : '') + path;
+    var i = path.indexOf('?');
+
+    this.canonicalPath = path;
+    this.path = path.replace(base, '') || '/';
+    if (hashbang) this.path = this.path.replace('#!', '') || '/';
+
+    this.title = document.title;
+    this.state = state || {};
+    this.state.path = path;
+    this.querystring = ~i ? decodeURLEncodedURIComponent(path.slice(i + 1)) : '';
+    this.pathname = decodeURLEncodedURIComponent(~i ? path.slice(0, i) : path);
+    this.params = {};
+
+    // fragment
+    this.hash = '';
+    if (!hashbang) {
+      if (!~this.path.indexOf('#')) return;
+      var parts = this.path.split('#');
+      this.path = parts[0];
+      this.hash = decodeURLEncodedURIComponent(parts[1]) || '';
+      this.querystring = this.querystring.split('#')[0];
+    }
+  }
+
+  /**
+   * Expose `Context`.
+   */
+
+  page.Context = Context;
+
+  /**
+   * Push state.
+   *
+   * @api private
+   */
+
+  Context.prototype.pushState = function() {
+    page.len++;
+    history.pushState(this.state, this.title, hashbang && this.path !== '/' ? '#!' + this.path : this.canonicalPath);
+  };
+
+  /**
+   * Save the context state.
+   *
+   * @api public
+   */
+
+  Context.prototype.save = function() {
+    history.replaceState(this.state, this.title, hashbang && this.path !== '/' ? '#!' + this.path : this.canonicalPath);
+  };
+
+  /**
+   * Initialize `Route` with the given HTTP `path`,
+   * and an array of `callbacks` and `options`.
+   *
+   * Options:
+   *
+   *   - `sensitive`    enable case-sensitive routes
+   *   - `strict`       enable strict matching for trailing slashes
+   *
+   * @constructor
+   * @param {string} path
+   * @param {Object=} options
+   * @api private
+   */
+
+  function Route(path, options) {
+    options = options || {};
+    this.path = (path === '*') ? '(.*)' : path;
+    this.method = 'GET';
+    this.regexp = pathtoRegexp(this.path,
+      this.keys = [],
+      options);
+  }
+
+  /**
+   * Expose `Route`.
+   */
+
+  page.Route = Route;
+
+  /**
+   * Return route middleware with
+   * the given callback `fn()`.
+   *
+   * @param {Function} fn
+   * @return {Function}
+   * @api public
+   */
+
+  Route.prototype.middleware = function(fn) {
+    var self = this;
+    return function(ctx, next) {
+      if (self.match(ctx.path, ctx.params)) return fn(ctx, next);
+      next();
+    };
+  };
+
+  /**
+   * Check if this route matches `path`, if so
+   * populate `params`.
+   *
+   * @param {string} path
+   * @param {Object} params
+   * @return {boolean}
+   * @api private
+   */
+
+  Route.prototype.match = function(path, params) {
+    var keys = this.keys,
+      qsIndex = path.indexOf('?'),
+      pathname = ~qsIndex ? path.slice(0, qsIndex) : path,
+      m = this.regexp.exec(decodeURIComponent(pathname));
+
+    if (!m) return false;
+
+    for (var i = 1, len = m.length; i < len; ++i) {
+      var key = keys[i - 1];
+      var val = decodeURLEncodedURIComponent(m[i]);
+      if (val !== undefined || !(hasOwnProperty.call(params, key.name))) {
+        params[key.name] = val;
+      }
+    }
+
+    return true;
+  };
+
+
+  /**
+   * Handle "populate" events.
+   */
+
+  var onpopstate = (function () {
+    var loaded = false;
+    if ('undefined' === typeof window) {
+      return;
+    }
+    if (document.readyState === 'complete') {
+      loaded = true;
+    } else {
+      window.addEventListener('load', function() {
+        setTimeout(function() {
+          loaded = true;
+        }, 0);
+      });
+    }
+    return function onpopstate(e) {
+      if (!loaded) return;
+      if (e.state) {
+        var path = e.state.path;
+        page.replace(path, e.state);
+      } else {
+        page.show(location.pathname + location.hash, undefined, undefined, false);
+      }
+    };
+  })();
+  /**
+   * Handle "click" events.
+   */
+
+  function onclick(e) {
+
+    if (1 !== which(e)) return;
+
+    if (e.metaKey || e.ctrlKey || e.shiftKey) return;
+    if (e.defaultPrevented) return;
+
+
+
+    // ensure link
+    // use shadow dom when available
+    var el = e.path ? e.path[0] : e.target;
+    while (el && 'A' !== el.nodeName) el = el.parentNode;
+    if (!el || 'A' !== el.nodeName) return;
+
+
+
+    // Ignore if tag has
+    // 1. "download" attribute
+    // 2. rel="external" attribute
+    if (el.hasAttribute('download') || el.getAttribute('rel') === 'external') return;
+
+    // ensure non-hash for the same path
+    var link = el.getAttribute('href');
+    if (!hashbang && el.pathname === location.pathname && (el.hash || '#' === link)) return;
+
+
+
+    // Check for mailto: in the href
+    if (link && link.indexOf('mailto:') > -1) return;
+
+    // check target
+    if (el.target) return;
+
+    // x-origin
+    if (!sameOrigin(el.href)) return;
+
+
+
+    // rebuild path
+    var path = el.pathname + el.search + (el.hash || '');
+
+    // strip leading "/[drive letter]:" on NW.js on Windows
+    if (typeof process !== 'undefined' && path.match(/^\/[a-zA-Z]:\//)) {
+      path = path.replace(/^\/[a-zA-Z]:\//, '/');
+    }
+
+    // same page
+    var orig = path;
+
+    if (path.indexOf(base) === 0) {
+      path = path.substr(base.length);
+    }
+
+    if (hashbang) path = path.replace('#!', '');
+
+    if (base && orig === path) return;
+
+    e.preventDefault();
+    page.show(orig);
+  }
+
+  /**
+   * Event button.
+   */
+
+  function which(e) {
+    e = e || window.event;
+    return null === e.which ? e.button : e.which;
+  }
+
+  /**
+   * Check if `href` is the same origin.
+   */
+
+  function sameOrigin(href) {
+    var origin = location.protocol + '//' + location.hostname;
+    if (location.port) origin += ':' + location.port;
+    return (href && (0 === href.indexOf(origin)));
+  }
+
+  page.sameOrigin = sameOrigin;
+
+}).call(this,require('_process'))
+
+},{"_process":7,"path-to-regexp":5}],5:[function(require,module,exports){
+var isarray = require('isarray')
+
+/**
+ * Expose `pathToRegexp`.
+ */
+module.exports = pathToRegexp
+module.exports.parse = parse
+module.exports.compile = compile
+module.exports.tokensToFunction = tokensToFunction
+module.exports.tokensToRegExp = tokensToRegExp
+
+/**
+ * The main path matching regexp utility.
+ *
+ * @type {RegExp}
+ */
+var PATH_REGEXP = new RegExp([
+  // Match escaped characters that would otherwise appear in future matches.
+  // This allows the user to escape special characters that won't transform.
+  '(\\\\.)',
+  // Match Express-style parameters and un-named parameters with a prefix
+  // and optional suffixes. Matches appear as:
+  //
+  // "/:test(\\d+)?" => ["/", "test", "\d+", undefined, "?", undefined]
+  // "/route(\\d+)"  => [undefined, undefined, undefined, "\d+", undefined, undefined]
+  // "/*"            => ["/", undefined, undefined, undefined, undefined, "*"]
+  '([\\/.])?(?:(?:\\:(\\w+)(?:\\(((?:\\\\.|[^()])+)\\))?|\\(((?:\\\\.|[^()])+)\\))([+*?])?|(\\*))'
+].join('|'), 'g')
+
+/**
+ * Parse a string for the raw tokens.
+ *
+ * @param  {String} str
+ * @return {Array}
+ */
+function parse (str) {
+  var tokens = []
+  var key = 0
+  var index = 0
+  var path = ''
+  var res
+
+  while ((res = PATH_REGEXP.exec(str)) != null) {
+    var m = res[0]
+    var escaped = res[1]
+    var offset = res.index
+    path += str.slice(index, offset)
+    index = offset + m.length
+
+    // Ignore already escaped sequences.
+    if (escaped) {
+      path += escaped[1]
+      continue
+    }
+
+    // Push the current path onto the tokens.
+    if (path) {
+      tokens.push(path)
+      path = ''
+    }
+
+    var prefix = res[2]
+    var name = res[3]
+    var capture = res[4]
+    var group = res[5]
+    var suffix = res[6]
+    var asterisk = res[7]
+
+    var repeat = suffix === '+' || suffix === '*'
+    var optional = suffix === '?' || suffix === '*'
+    var delimiter = prefix || '/'
+    var pattern = capture || group || (asterisk ? '.*' : '[^' + delimiter + ']+?')
+
+    tokens.push({
+      name: name || key++,
+      prefix: prefix || '',
+      delimiter: delimiter,
+      optional: optional,
+      repeat: repeat,
+      pattern: escapeGroup(pattern)
+    })
+  }
+
+  // Match any characters still remaining.
+  if (index < str.length) {
+    path += str.substr(index)
+  }
+
+  // If the path exists, push it onto the end.
+  if (path) {
+    tokens.push(path)
+  }
+
+  return tokens
+}
+
+/**
+ * Compile a string to a template function for the path.
+ *
+ * @param  {String}   str
+ * @return {Function}
+ */
+function compile (str) {
+  return tokensToFunction(parse(str))
+}
+
+/**
+ * Expose a method for transforming tokens into the path function.
+ */
+function tokensToFunction (tokens) {
+  // Compile all the tokens into regexps.
+  var matches = new Array(tokens.length)
+
+  // Compile all the patterns before compilation.
+  for (var i = 0; i < tokens.length; i++) {
+    if (typeof tokens[i] === 'object') {
+      matches[i] = new RegExp('^' + tokens[i].pattern + '$')
+    }
+  }
+
+  return function (obj) {
+    var path = ''
+    var data = obj || {}
+
+    for (var i = 0; i < tokens.length; i++) {
+      var token = tokens[i]
+
+      if (typeof token === 'string') {
+        path += token
+
+        continue
+      }
+
+      var value = data[token.name]
+      var segment
+
+      if (value == null) {
+        if (token.optional) {
+          continue
+        } else {
+          throw new TypeError('Expected "' + token.name + '" to be defined')
+        }
+      }
+
+      if (isarray(value)) {
+        if (!token.repeat) {
+          throw new TypeError('Expected "' + token.name + '" to not repeat, but received "' + value + '"')
+        }
+
+        if (value.length === 0) {
+          if (token.optional) {
+            continue
+          } else {
+            throw new TypeError('Expected "' + token.name + '" to not be empty')
+          }
+        }
+
+        for (var j = 0; j < value.length; j++) {
+          segment = encodeURIComponent(value[j])
+
+          if (!matches[i].test(segment)) {
+            throw new TypeError('Expected all "' + token.name + '" to match "' + token.pattern + '", but received "' + segment + '"')
+          }
+
+          path += (j === 0 ? token.prefix : token.delimiter) + segment
+        }
+
+        continue
+      }
+
+      segment = encodeURIComponent(value)
+
+      if (!matches[i].test(segment)) {
+        throw new TypeError('Expected "' + token.name + '" to match "' + token.pattern + '", but received "' + segment + '"')
+      }
+
+      path += token.prefix + segment
+    }
+
+    return path
+  }
+}
+
+/**
+ * Escape a regular expression string.
+ *
+ * @param  {String} str
+ * @return {String}
+ */
+function escapeString (str) {
+  return str.replace(/([.+*?=^!:${}()[\]|\/])/g, '\\$1')
+}
+
+/**
+ * Escape the capturing group by escaping special characters and meaning.
+ *
+ * @param  {String} group
+ * @return {String}
+ */
+function escapeGroup (group) {
+  return group.replace(/([=!:$\/()])/g, '\\$1')
+}
+
+/**
+ * Attach the keys as a property of the regexp.
+ *
+ * @param  {RegExp} re
+ * @param  {Array}  keys
+ * @return {RegExp}
+ */
+function attachKeys (re, keys) {
+  re.keys = keys
+  return re
+}
+
+/**
+ * Get the flags for a regexp from the options.
+ *
+ * @param  {Object} options
+ * @return {String}
+ */
+function flags (options) {
+  return options.sensitive ? '' : 'i'
+}
+
+/**
+ * Pull out keys from a regexp.
+ *
+ * @param  {RegExp} path
+ * @param  {Array}  keys
+ * @return {RegExp}
+ */
+function regexpToRegexp (path, keys) {
+  // Use a negative lookahead to match only capturing groups.
+  var groups = path.source.match(/\((?!\?)/g)
+
+  if (groups) {
+    for (var i = 0; i < groups.length; i++) {
+      keys.push({
+        name: i,
+        prefix: null,
+        delimiter: null,
+        optional: false,
+        repeat: false,
+        pattern: null
+      })
+    }
+  }
+
+  return attachKeys(path, keys)
+}
+
+/**
+ * Transform an array into a regexp.
+ *
+ * @param  {Array}  path
+ * @param  {Array}  keys
+ * @param  {Object} options
+ * @return {RegExp}
+ */
+function arrayToRegexp (path, keys, options) {
+  var parts = []
+
+  for (var i = 0; i < path.length; i++) {
+    parts.push(pathToRegexp(path[i], keys, options).source)
+  }
+
+  var regexp = new RegExp('(?:' + parts.join('|') + ')', flags(options))
+
+  return attachKeys(regexp, keys)
+}
+
+/**
+ * Create a path regexp from string input.
+ *
+ * @param  {String} path
+ * @param  {Array}  keys
+ * @param  {Object} options
+ * @return {RegExp}
+ */
+function stringToRegexp (path, keys, options) {
+  var tokens = parse(path)
+  var re = tokensToRegExp(tokens, options)
+
+  // Attach keys back to the regexp.
+  for (var i = 0; i < tokens.length; i++) {
+    if (typeof tokens[i] !== 'string') {
+      keys.push(tokens[i])
+    }
+  }
+
+  return attachKeys(re, keys)
+}
+
+/**
+ * Expose a function for taking tokens and returning a RegExp.
+ *
+ * @param  {Array}  tokens
+ * @param  {Array}  keys
+ * @param  {Object} options
+ * @return {RegExp}
+ */
+function tokensToRegExp (tokens, options) {
+  options = options || {}
+
+  var strict = options.strict
+  var end = options.end !== false
+  var route = ''
+  var lastToken = tokens[tokens.length - 1]
+  var endsWithSlash = typeof lastToken === 'string' && /\/$/.test(lastToken)
+
+  // Iterate over the tokens and create our regexp string.
+  for (var i = 0; i < tokens.length; i++) {
+    var token = tokens[i]
+
+    if (typeof token === 'string') {
+      route += escapeString(token)
+    } else {
+      var prefix = escapeString(token.prefix)
+      var capture = token.pattern
+
+      if (token.repeat) {
+        capture += '(?:' + prefix + capture + ')*'
+      }
+
+      if (token.optional) {
+        if (prefix) {
+          capture = '(?:' + prefix + '(' + capture + '))?'
+        } else {
+          capture = '(' + capture + ')?'
+        }
+      } else {
+        capture = prefix + '(' + capture + ')'
+      }
+
+      route += capture
+    }
+  }
+
+  // In non-strict mode we allow a slash at the end of match. If the path to
+  // match already ends with a slash, we remove it for consistency. The slash
+  // is valid at the end of a path match, not in the middle. This is important
+  // in non-ending mode, where "/test/" shouldn't match "/test//route".
+  if (!strict) {
+    route = (endsWithSlash ? route.slice(0, -2) : route) + '(?:\\/(?=$))?'
+  }
+
+  if (end) {
+    route += '$'
+  } else {
+    // In non-ending mode, we need the capturing groups to match as much as
+    // possible by using a positive lookahead to the end or next path segment.
+    route += strict && endsWithSlash ? '' : '(?=\\/|$)'
+  }
+
+  return new RegExp('^' + route, flags(options))
+}
+
+/**
+ * Normalize the given path string, returning a regular expression.
+ *
+ * An empty array can be passed in for the keys, which will hold the
+ * placeholder key descriptions. For example, using `/user/:id`, `keys` will
+ * contain `[{ name: 'id', delimiter: '/', optional: false, repeat: false }]`.
+ *
+ * @param  {(String|RegExp|Array)} path
+ * @param  {Array}                 [keys]
+ * @param  {Object}                [options]
+ * @return {RegExp}
+ */
+function pathToRegexp (path, keys, options) {
+  keys = keys || []
+
+  if (!isarray(keys)) {
+    options = keys
+    keys = []
+  } else if (!options) {
+    options = {}
+  }
+
+  if (path instanceof RegExp) {
+    return regexpToRegexp(path, keys, options)
+  }
+
+  if (isarray(path)) {
+    return arrayToRegexp(path, keys, options)
+  }
+
+  return stringToRegexp(path, keys, options)
+}
+
+},{"isarray":6}],6:[function(require,module,exports){
+module.exports = Array.isArray || function (arr) {
+  return Object.prototype.toString.call(arr) == '[object Array]';
+};
+
+},{}],7:[function(require,module,exports){
+// shim for using process in browser
+
+var process = module.exports = {};
+var queue = [];
+var draining = false;
+
+function drainQueue() {
+    if (draining) {
+        return;
+    }
+    draining = true;
+    var currentQueue;
+    var len = queue.length;
+    while(len) {
+        currentQueue = queue;
+        queue = [];
+        var i = -1;
+        while (++i < len) {
+            currentQueue[i]();
+        }
+        len = queue.length;
+    }
+    draining = false;
+}
+process.nextTick = function (fun) {
+    queue.push(fun);
+    if (!draining) {
+        setTimeout(drainQueue, 0);
+    }
+};
+
+process.title = 'browser';
+process.browser = true;
+process.env = {};
+process.argv = [];
+process.version = ''; // empty string to avoid regexp issues
+process.versions = {};
+
+function noop() {}
+
+process.on = noop;
+process.addListener = noop;
+process.once = noop;
+process.off = noop;
+process.removeListener = noop;
+process.removeAllListeners = noop;
+process.emit = noop;
+
+process.binding = function (name) {
+    throw new Error('process.binding is not supported');
+};
+
+// TODO(shtylman)
+process.cwd = function () { return '/' };
+process.chdir = function (dir) {
+    throw new Error('process.chdir is not supported');
+};
+process.umask = function() { return 0; };
+
+},{}],8:[function(require,module,exports){
 /*
 	Ractive.js v0.7.3
 	Sat Apr 25 2015 13:52:38 GMT-0400 (EDT) - commit da40f81c660ba2f09c45a09a9c20fdd34ee36d80
@@ -16859,7 +17943,104 @@ domready(function() {
 }));
 //# sourceMappingURL=ractive.js.map
 
-},{}],5:[function(require,module,exports){
+},{}],9:[function(require,module,exports){
+module.exports={
+    "projects" : [
+            {
+                "class": "dot",
+                "websiteName" : "DOT EVENTS & PR",
+                "img" : "dot-website",
+                "link": "http://dot-relations.surge.sh",
+                "linkName": "dot-relations.com"
+            },
+            {
+                "class": "masAurelia",
+                "websiteName" : "Mas Aurelia",
+                "img" : "masAurelia-website",
+                "link": "http://masaurelia.surge.sh",
+                "linkName": "masaurelia.com"
+            },
+            {
+                "class": "mindbody",
+                "websiteName" : "Mind Body Bowl",
+                "img" : "mindbody-website",
+                "link": "http://mindbodybowl.com/",
+                "linkName": "mindbodybowl.com"
+            },
+            {
+                "class": "tfl",
+                "websiteName" : "Report It TLF",
+                "img" : "tfl-website",
+                "link": "http://report.tumblr.com/",
+                "linkName": "report-it.com"
+            },
+            {
+                "class": "neighbourhood",
+                "websiteName" : "Neighbourhood Planning",
+                "img" : "neighbourhood-website",
+                "link": "http://neighbourhoodplanning.org",
+                "linkName": "neighbourhoodplanning.org"
+            },
+            {
+                "class": "jlr",
+                "websiteName" : "Jaguar Landrover Hackathon",
+                "img" : "jlr-website",
+                "link": "http://jlrdevchallenge.com/",
+                "linkName": "jlrdevchallenge.com"
+            },
+            {
+                "class": "nepal",
+                "websiteName" : "Nepal Donation Box",
+                "img" : "nepal-website",
+                "link": "http://nepaldonationbox.com/",
+                "linkName": "nepaldonationbox.com"
+            }
+
+    ],
+
+    "nav" : [
+        {
+            "navTab" : "info",
+            "onClick" : "goToInfo"
+        },
+        {
+            "navTab" : "projects",
+            "onClick" : "goToProjects"
+        },
+        {
+            "navTab" : "about",
+            "onClick" : "goToAbout"
+        },
+        /*{
+            "navTab" : "language",
+            "onClick" : "goToLanguage"
+        },
+        {
+            "navTab" : "experiment",
+            "onClick" : "goToExperiment"
+        },*/
+    ]
+}
+
+},{}],10:[function(require,module,exports){
+module.exports={"v":3,"t":[{"t":7,"e":"div","a":{"class":"about"},"f":[{"t":7,"e":"h1","f":["about :)"]}]}]}
+},{}],11:[function(require,module,exports){
+/**
+ * @module:   about
+ * @scss:     ./source/css/module/about.scss
+ * @html:     ./source/js/module/about/about.html
+ */
+
+
+var Module = require('../abstract-module');
+
+module.exports = Module.extend({
+
+  template: require('./about.html')
+
+});
+
+},{"../abstract-module":12,"./about.html":10}],12:[function(require,module,exports){
 var Ractive = require('ractive');
 
 module.exports = Ractive.extend({
@@ -16880,9 +18061,9 @@ module.exports = Ractive.extend({
 
 });
 
-},{"ractive":4}],6:[function(require,module,exports){
+},{"ractive":8}],13:[function(require,module,exports){
 module.exports={"v":3,"t":[{"t":7,"e":"div","a":{"class":"footer"},"f":[{"t":7,"e":"div","a":{"class":"footer-content"},"f":[{"t":7,"e":"p","f":[{"t":7,"e":"a","a":{"class":"github","href":"https://github.com/domhacking"},"f":["Github"]}]}," ",{"t":7,"e":"p","f":[{"t":7,"e":"a","a":{"class":"twitter","href":"https://twitter.com/domhacking"},"f":["Twitter"]}]}]}]}]}
-},{}],7:[function(require,module,exports){
+},{}],14:[function(require,module,exports){
 /**
  * @module:   footer
  * @scss:     ./source/css/module/footer.scss
@@ -16898,9 +18079,10 @@ module.exports = Module.extend({
 
 });
 
-},{"../abstract-module":5,"./footer.html":6}],8:[function(require,module,exports){
+},{"../abstract-module":12,"./footer.html":13}],15:[function(require,module,exports){
 /*auto-generated*/
 var Ractive = require('ractive');
+Ractive.components['ui-about'] = require('./about/about.js');
 Ractive.components['ui-footer'] = require('./footer/footer.js');
 Ractive.components['ui-info'] = require('./info/info.js');
 Ractive.components['ui-languages'] = require('./languages/languages.js');
@@ -16910,9 +18092,9 @@ Ractive.components['ui-projects'] = require('./projects/projects.js');
 
 module.exports = Ractive;
 
-},{"./footer/footer.js":7,"./info/info.js":10,"./languages/languages.js":12,"./nav/nav.js":14,"./openingPage/openingPage.js":16,"./projects/projects.js":18,"ractive":4}],9:[function(require,module,exports){
-module.exports={"v":3,"t":[{"t":7,"e":"div","a":{"class":"info"},"f":[{"t":7,"e":"h1","f":["info :)"]}]}]}
-},{}],10:[function(require,module,exports){
+},{"./about/about.js":11,"./footer/footer.js":14,"./info/info.js":17,"./languages/languages.js":19,"./nav/nav.js":21,"./openingPage/openingPage.js":23,"./projects/projects.js":25,"ractive":8}],16:[function(require,module,exports){
+module.exports={"v":3,"t":[{"t":7,"e":"div","a":{"class":"info block"},"f":[{"t":7,"e":"div","a":{"class":"block__content block__content--info"},"f":[{"t":7,"e":"p","a":{"class":"info__text"},"f":[{"t":7,"e":"span","a":{"class":"blue"},"f":["function"]}," ",{"t":7,"e":"span","a":{"class":"green"},"f":["website"]}," (",{"t":7,"e":"span","a":{"class":"orange"},"f":["dominicHacking"]},"){"]}," ",{"t":7,"e":"p","a":{"class":"info__text indent-one"},"f":[{"t":7,"e":"span","a":{"class":"blue"},"f":["var"]}," jobTitle ",{"t":7,"e":"span","a":{"class":"red"},"f":["="]},{"t":7,"e":"span","a":{"class":"yellow"},"f":[" \"Javascript Developer\""]},";"]}," ",{"t":7,"e":"p","a":{"class":"info__text indent-one"},"f":[{"t":7,"e":"span","a":{"class":"red"},"f":["if"]}," ( you ",{"t":7,"e":"span","a":{"class":"red"},"f":["==="]}," interestedContact ){"]}," ",{"t":7,"e":"p","a":{"class":"info__text indent-two"},"f":[{"t":7,"e":"span","a":{"class":"blue"},"f":["var"]}," email ",{"t":7,"e":"span","a":{"class":"red"},"f":["="]}," ",{"t":7,"e":"span","a":{"class":"yellow"},"f":["\"dominichacking@gmail.com\""]},";"]}," ",{"t":7,"e":"p","a":{"class":"info__text indent-two"},"f":[{"t":7,"e":"span","a":{"class":"blue"},"f":["var"]}," telephone ",{"t":7,"e":"span","a":{"class":"red"},"f":["="]}," ",{"t":7,"e":"span","a":{"class":"yellow"},"f":["\"+44 7500 406 744\""]},";"]}," ",{"t":7,"e":"p","a":{"class":"info__text indent-two"},"f":[{"t":7,"e":"span","a":{"class":"blue"},"f":["var"]}," twitter ",{"t":7,"e":"span","a":{"class":"red"},"f":["="]}," ",{"t":7,"e":"span","a":{"class":"yellow"},"f":["\"@domhacking\""]},";"]}," ",{"t":7,"e":"p","a":{"class":"info__text indent-one"},"f":["}",{"t":7,"e":"span","a":{"class":"red"},"f":[" else"]}," {"]}," ",{"t":7,"e":"p","a":{"class":"info__text indent-two"},"f":[{"t":7,"e":"span","a":{"class":"red"},"f":["return"]}," \"DO NOT CONTACT\";"]}," ",{"t":7,"e":"p","a":{"class":"info__text indent-one"},"f":["}"]}," ",{"t":7,"e":"p","a":{"class":"info__text"},"f":["};"]}]}]}]}
+},{}],17:[function(require,module,exports){
 /**
  * @module:   info
  * @scss:     ./source/css/module/info.scss
@@ -16928,9 +18110,9 @@ module.exports = Module.extend({
 
 });
 
-},{"../abstract-module":5,"./info.html":9}],11:[function(require,module,exports){
+},{"../abstract-module":12,"./info.html":16}],18:[function(require,module,exports){
 module.exports={"v":3,"t":[{"t":7,"e":"div","a":{"class":"languages"},"f":[{"t":7,"e":"h1","f":["languages :)"]}]}]}
-},{}],12:[function(require,module,exports){
+},{}],19:[function(require,module,exports){
 /**
  * @module:   languages
  * @scss:     ./source/css/module/languages.scss
@@ -16946,9 +18128,9 @@ module.exports = Module.extend({
 
 });
 
-},{"../abstract-module":5,"./languages.html":11}],13:[function(require,module,exports){
-module.exports={"v":3,"t":[{"t":7,"e":"div","a":{"class":"nav"},"f":[{"t":7,"e":"a","a":{"href":"/","class":"nav__heading"},"f":["DOMINIC HACKING"]}," ",{"t":7,"e":"ul","a":{"class":"nav__container"},"f":[{"t":7,"e":"li","a":{"class":"nav__items active"},"f":["CONTACT"]}," ",{"t":7,"e":"li","a":{"class":"nav__items"},"f":["LANGUAGES"]}," ",{"t":7,"e":"li","a":{"class":"nav__items"},"f":["PROJECTS"]}]}]}]}
-},{}],14:[function(require,module,exports){
+},{"../abstract-module":12,"./languages.html":18}],20:[function(require,module,exports){
+module.exports={"v":3,"t":[{"t":7,"e":"div","a":{"class":"nav"},"f":[{"t":7,"e":"a","a":{"href":"/","class":"nav__heading"},"f":["DOMINIC HACKING"]}," ",{"t":7,"e":"ul","a":{"class":"nav__container"},"f":[{"t":4,"f":[{"t":7,"e":"li","v":{"click":{"n":[{"t":2,"r":"onClick"}],"d":[]}},"a":{"class":"nav__items"},"f":[{"t":2,"r":"navTab"}]}],"r":"nav"}]}]}," "]}
+},{}],21:[function(require,module,exports){
 /**
  * @module:   nav
  * @scss:     ./source/css/module/nav.scss
@@ -16957,28 +18139,68 @@ module.exports={"v":3,"t":[{"t":7,"e":"div","a":{"class":"nav"},"f":[{"t":7,"e":
 
 
 var Module = require('../abstract-module');
+var page 	= require('page');
 
 module.exports = Module.extend({
 
-  template: require('./nav.html')
+  template: require('./nav.html'),
+
+  data: require('../../../data/content.json'),
+
+
+  oninit: function(){
+      this.on('goToHome', this.goHome);
+      this.on('goToProjects', this.goProjects);
+      this.on('goToInfo', this.goInfo);
+      this.on('goToAbout', this.goAbout);
+    //   this.on('goToInfo', this.goInfo);
+  },
+
+  goHome: function(){
+      page('/');
+  },
+
+  goProjects: function(){
+      page('/projects');
+      console.log('proj');
+  },
+
+  goInfo: function(){
+      page('/info');
+      console.log('info');
+  },
+
+  goAbout: function(){
+      page('/about');
+      console.log('info');
+  },
 
 });
 
-},{"../abstract-module":5,"./nav.html":13}],15:[function(require,module,exports){
-module.exports={"v":3,"t":[{"t":7,"e":"div","a":{"class":"openingPage"},"f":[{"t":7,"e":"div","a":{"class":"content"},"f":[{"t":7,"e":"p","a":{"class":"content__text content__text--name"}}," ",{"t":7,"e":"p","a":{"class":"content__text content__text--coder"}}]}," ",{"t":7,"e":"p","a":{"class":"openingPage__button blinker"},"v":{"click":"enter"},"f":["enter"]}]}]}
-},{}],16:[function(require,module,exports){
+},{"../../../data/content.json":9,"../abstract-module":12,"./nav.html":20,"page":4}],22:[function(require,module,exports){
+module.exports={"v":3,"t":[{"t":7,"e":"div","a":{"class":"openingPage"},"f":[{"t":7,"e":"div","a":{"class":"content"},"f":[{"t":7,"e":"p","a":{"class":"content__text content__text--name"}}," ",{"t":7,"e":"p","a":{"class":"content__text content__text--coder"}}]}," ",{"t":7,"e":"p","a":{"class":"openingPage__button blinker"},"v":{"click":"goToInfo"},"f":["enter"]}]}]}
+},{}],23:[function(require,module,exports){
 /**
 * @module:   openingPage
 * @scss:     ./source/css/module/openingPage.scss
 * @html:     ./source/js/module/openingPage/openingPage.html
 */
 var malarkey = require('malarkey');
+var page 	= require('page');
 
 var Module = require('../abstract-module');
 
 module.exports = Module.extend({
 
     template: require('./openingPage.html'),
+
+    oninit: function(){
+        this.on('goToInfo', this.goInfo);
+    },
+
+    goInfo: function(){
+        page('/info')
+    },
 
     onrender: function(){
         var elem = document.querySelectorAll('.content__text--name')[0];
@@ -16999,9 +18221,9 @@ module.exports = Module.extend({
     }
 });
 
-},{"../abstract-module":5,"./openingPage.html":15,"malarkey":3}],17:[function(require,module,exports){
-module.exports={"v":3,"t":[{"t":7,"e":"div","a":{"class":"projects"},"f":[{"t":7,"e":"section","a":{"class":"tab-pane tab-pane--projects","id":"projects"},"f":[{"t":7,"e":"div","a":{"class":"content"},"f":[{"t":7,"e":"div","a":{"class":"content--container"},"f":[{"t":7,"e":"div","a":{"class":"project"},"f":[{"t":7,"e":"a","a":{"href":"http://report-it.tumblr.com/"},"f":[{"t":7,"e":"div","a":{"class":"websiteThumbnail websiteThumbnail-tfl"}}]}," ",{"t":7,"e":"h3","f":["TFL"]}," ",{"t":7,"e":"a","a":{"href":"http://report-it.tumblr.com/"},"f":["report-it.tumblr.com"]}]}," ",{"t":7,"e":"div","a":{"class":"project"},"f":[{"t":7,"e":"a","a":{"href":"http://loweandcoproperties.com/"},"f":[{"t":7,"e":"div","a":{"class":"websiteThumbnail websiteThumbnail-lowe"}}]}," ",{"t":7,"e":"h3","f":["Lowe and Co Properties"]}," ",{"t":7,"e":"a","a":{"href":"http://loweandcoproperties.com/"},"f":["loweandcoproperties.com"]}]}," ",{"t":7,"e":"div","a":{"class":"project"},"f":[{"t":7,"e":"a","a":{"href":"http://nepaldonationbox.com/"},"f":[{"t":7,"e":"div","a":{"class":"websiteThumbnail websiteThumbnail-nepal"}}]}," ",{"t":7,"e":"h3","f":["Nepal Donataion Box"]}," ",{"t":7,"e":"a","a":{"href":"http://nepaldonationbox.com/"},"f":["nepaldonationbox.com"]}]}," ",{"t":7,"e":"div","a":{"class":"project"},"f":[{"t":7,"e":"a","a":{"href":"development.mymillenials.divshot.io"},"f":[{"t":7,"e":"div","a":{"class":"websiteThumbnail websiteThumbnail-millenials"}}]}," ",{"t":7,"e":"h3","f":["The Millenials"]}," ",{"t":7,"e":"a","a":{"href":"http://development.mymillenials.divshot.io"},"f":["themillenials.com"]}]}]}]}]}]}]}
-},{}],18:[function(require,module,exports){
+},{"../abstract-module":12,"./openingPage.html":22,"malarkey":3,"page":4}],24:[function(require,module,exports){
+module.exports={"v":3,"t":[{"t":7,"e":"div","a":{"class":"projects"},"f":[{"t":7,"e":"div","a":{"class":"content"},"f":[{"t":7,"e":"div","a":{"class":"content--container"},"f":[{"t":4,"f":[{"t":7,"e":"div","a":{"class":"project"},"f":[{"t":7,"e":"a","a":{"href":[{"t":2,"r":"link"}],"target":"_blank"},"f":[{"t":7,"e":"div","a":{"class":["websiteThumbnail websiteThumbnail-",{"t":2,"r":"class"}]}}]}," ",{"t":7,"e":"h3","f":[{"t":2,"r":"websiteName"}]}," ",{"t":7,"e":"a","a":{"href":[{"t":2,"r":"link"}],"target":"_blank"},"f":[{"t":2,"r":"linkName"}]}]}],"r":"projects"}]}]}]}]}
+},{}],25:[function(require,module,exports){
 /**
  * @module:   projects
  * @scss:     ./source/css/module/projects.scss
@@ -17013,14 +18235,21 @@ var Module = require('../abstract-module');
 
 module.exports = Module.extend({
 
-  template: require('./projects.html')
+  template: require('./projects.html'),
+
+  data: require('../../../data/content.json'),
+
+
+
+
 
 });
 
-},{"../abstract-module":5,"./projects.html":17}],19:[function(require,module,exports){
-module.exports={"v":3,"t":[{"t":7,"e":"div","a":{"class":"flip-container"},"f":[{"t":7,"e":"div","a":{"class":["flipper ",{"t":2,"x":{"r":["flip"],"s":"_0?\"change\":\" \""}}]},"f":[{"t":7,"e":"div","a":{"class":"front opening"},"f":[{"t":7,"e":"ui-openingPage"}]}," ",{"t":7,"e":"div","a":{"class":"back"},"f":[{"t":7,"e":"ui-nav"}," ",{"t":7,"e":"ui-info"}," "]}]}]}]}
-},{}],20:[function(require,module,exports){
+},{"../../../data/content.json":9,"../abstract-module":12,"./projects.html":24}],26:[function(require,module,exports){
+module.exports={"v":3,"t":[" ",{"t":4,"f":[{"t":7,"e":"div","a":{"class":"front opening"},"f":[{"t":7,"e":"ui-openingPage"}]}],"x":{"r":["view"],"s":"_0==\"home\""}}," ",{"t":7,"e":"ui-nav"}," ",{"t":4,"f":[{"t":7,"e":"ui-projects"}],"x":{"r":["view"],"s":"_0==\"projects\""}}," ",{"t":4,"f":[{"t":7,"e":"ui-info"}],"x":{"r":["view"],"s":"_0==\"info\""}}," ",{"t":7,"e":"ui-footer"}," "]}
+},{}],27:[function(require,module,exports){
 var Ractive = require('../module');
+var page        = require('page');
 
 module.exports = function() {
 
@@ -17039,8 +18268,9 @@ module.exports = function() {
 
     oninit: function() {
         this.on('enter', this.changeClass)
+        this.setRouter();
     },
-
+    
     onrender: function() {
     },
 
@@ -17048,10 +18278,32 @@ module.exports = function() {
         console.log('clicked');
         this.toggle('flip');
     },
+
+    setRouter: function(){
+        var self = this;
+
+        page('/', function () {
+            self.set('view', 'home');
+        });
+
+        page('/projects', function () {
+            self.set('view', 'projects');
+        });
+
+        page('/info', function () {
+            self.set('view', 'info');
+        });
+
+        page({
+            click: false,
+            dispatch: true,
+            hashbang: false,
+        });
+    }
   });
 };
 
-},{"../module":8,"./main.html":19}]},{},[1])
+},{"../module":15,"./main.html":26,"page":4}]},{},[1])
 
 
 //# sourceMappingURL=app.js.map

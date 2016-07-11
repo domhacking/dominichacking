@@ -6,12 +6,16 @@
 
 
 @include module("projects") {
-    display: block;
-    margin: 0 auto;
-    vertical-align: top;
-    width: 300px;
-    padding-bottom: 25px;
-    text-align: center;
+
+    .project{
+        display: inline-block;
+        margin: 0 auto;
+        vertical-align: top;
+        width: 300px;
+        padding-bottom: 25px;
+        text-align: center;
+        // border: 1px solid white;
+    }
 
     .websiteThumbnail{
         height: 110px;
@@ -24,20 +28,32 @@
             z-index: 2;
         }
 
-        &.websiteThumbnail-tfl{
-            background: url(../img/tfl-thumbnail.jpg) no-repeat;
+        &.websiteThumbnail-dot{
+            background: url(../img/dot-website.jpg) no-repeat;
             background-size: 100% auto;
         }
-        &.websiteThumbnail-lowe{
-            background: url(../img/lowe-thumbnail.jpg) no-repeat;
+        &.websiteThumbnail-masAurelia{
+            background: url(../img/masaurelia-website.jpg) no-repeat;
+            background-size: 100% auto;
+        }
+        &.websiteThumbnail-tfl{
+            background: url(../img/tfl-thumbnail.jpg) no-repeat;
             background-size: 100% auto;
         }
         &.websiteThumbnail-nepal{
             background: url(../img/nepal-thumbnail.jpg) no-repeat;
             background-size: 100% auto;
         }
-        &.websiteThumbnail-millenials{
-            background: url(../img/millenials-thumbnail.jpg) no-repeat;
+        &.websiteThumbnail-mindbody{
+            background: url(../img/mindbody-website.jpg) no-repeat;
+            background-size: 100% auto;
+        }
+        &.websiteThumbnail-neighbourhood{
+            background: url(../img/neighbourhood-website.jpg) no-repeat;
+            background-size: 100% auto;
+        }
+        &.websiteThumbnail-jlr{
+            background: url(../img/jlr-website.jpg) no-repeat;
             background-size: 100% auto;
         }
     }
@@ -46,3 +62,5 @@
         padding-top: 10px;
     }
 }
+
+// @media screen and (min-width:800px){

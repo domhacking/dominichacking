@@ -36,7 +36,6 @@
   },
   "dependencies": {
     "domready": "^1.0.8",
-    "ractive": "^0.7.3",
     "inuit-box-sizing": "^0.2.0",
     "inuit-clearfix": "lucasmotta/trumps.clearfix",
     "inuit-defaults": "lucasmotta/settings.defaults",
@@ -61,6 +60,9 @@
     "inuit-shared": "^0.1.5",
     "inuit-spacing": "^0.7.0",
     "inuit-tools-widths": "^0.1.4",
-    "inuit-widths": "^0.4.2"
+    "inuit-widths": "^0.4.2",
+    "malarkey": "^1.3.3",
+    "page": "^1.7.1",
+    "ractive": "^0.7.3"
   }
 }

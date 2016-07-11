@@ -1,0 +1,77 @@
+{
+    "projects" : [
+            {
+                "class": "dot",
+                "websiteName" : "DOT EVENTS & PR",
+                "img" : "dot-website",
+                "link": "http://dot-relations.surge.sh",
+                "linkName": "dot-relations.com"
+            },
+            {
+                "class": "masAurelia",
+                "websiteName" : "Mas Aurelia",
+                "img" : "masAurelia-website",
+                "link": "http://masaurelia.surge.sh",
+                "linkName": "masaurelia.com"
+            },
+            {
+                "class": "mindbody",
+                "websiteName" : "Mind Body Bowl",
+                "img" : "mindbody-website",
+                "link": "http://mindbodybowl.com/",
+                "linkName": "mindbodybowl.com"
+            },
+            {
+                "class": "tfl",
+                "websiteName" : "Report It TLF",
+                "img" : "tfl-website",
+                "link": "http://report.tumblr.com/",
+                "linkName": "report-it.com"
+            },
+            {
+                "class": "neighbourhood",
+                "websiteName" : "Neighbourhood Planning",
+                "img" : "neighbourhood-website",
+                "link": "http://neighbourhoodplanning.org",
+                "linkName": "neighbourhoodplanning.org"
+            },
+            {
+                "class": "jlr",
+                "websiteName" : "Jaguar Landrover Hackathon",
+                "img" : "jlr-website",
+                "link": "http://jlrdevchallenge.com/",
+                "linkName": "jlrdevchallenge.com"
+            },
+            {
+                "class": "nepal",
+                "websiteName" : "Nepal Donation Box",
+                "img" : "nepal-website",
+                "link": "http://nepaldonationbox.com/",
+                "linkName": "nepaldonationbox.com"
+            }
+
+    ],
+
+    "nav" : [
+        {
+            "navTab" : "info",
+            "onClick" : "goToInfo"
+        },
+        {
+            "navTab" : "projects",
+            "onClick" : "goToProjects"
+        },
+        {
+            "navTab" : "about",
+            "onClick" : "goToAbout"
+        },
+        /*{
+            "navTab" : "language",
+            "onClick" : "goToLanguage"
+        },
+        {
+            "navTab" : "experiment",
+            "onClick" : "goToExperiment"
+        },*/
+    ]
+}

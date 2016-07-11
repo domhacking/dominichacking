@@ -9,6 +9,12 @@ var Module = require('../abstract-module');
 
 module.exports = Module.extend({
 
-  template: require('./projects.html')
+  template: require('./projects.html'),
+
+  data: require('../../../data/content.json'),
+
+
+
+
 
 });

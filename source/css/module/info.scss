@@ -5,6 +5,19 @@
  */
 
 
-@include module("info") { 
-  // :)
+@include module("info") {
+    margin-left: 70px;
+
+    &__text{
+        font-size: 20px;
+        line-height: 25px;
+    }
+
+    .indent-one{
+        margin-left: 40px;
+    }
+
+    .indent-two{
+        margin-left: 80px;
+    }
 }

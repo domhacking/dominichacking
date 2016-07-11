@@ -4,12 +4,21 @@
 * @html:     ./source/js/module/openingPage/openingPage.html
 */
 var malarkey = require('malarkey');
+var page 	= require('page');
 
 var Module = require('../abstract-module');
 
 module.exports = Module.extend({
 
     template: require('./openingPage.html'),
+
+    oninit: function(){
+        this.on('goToInfo', this.goInfo);
+    },
+
+    goInfo: function(){
+        page('/info')
+    },
 
     onrender: function(){
         var elem = document.querySelectorAll('.content__text--name')[0];

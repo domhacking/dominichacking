@@ -1,15 +1,24 @@
-<div class="flip-container">
-    <div class="flipper {{flip ? 'change': ' '}}">
-        <div class="front opening">
-            <ui-openingPage />
-        </div>
+<!-- <div class="flip-container"> -->
+    <!-- <div class="flipper {{flip ? 'change': ' '}}"> -->
+        {{#view == "home"}}
+            <div class="front opening">
+                <ui-openingPage />
+            </div>
+        {{/}}
 
-        <div class="back">
+        <!-- <div class="back"> -->
             <ui-nav />
-            <ui-info />
+
+            {{#view == "projects"}}
+	            <ui-projects />
+            {{/}}
+            {{#view == "info"}}
+	            <ui-info />
+            {{/}}
+            <!-- <ui-info /> -->
             <!-- <ui-projects /> -->
             <!-- <ui-languages /> -->
-            <!-- <ui-footer /> -->
-        </div>
-    </div>
-</div>
+            <ui-footer />
+        <!-- </div> -->
+    <!-- </div> -->
+<!-- </div> -->

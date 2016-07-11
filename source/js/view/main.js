@@ -1,4 +1,5 @@
 var Ractive = require('../module');
+var page        = require('page');
 
 module.exports = function() {
 
@@ -17,8 +18,9 @@ module.exports = function() {
 
     oninit: function() {
         this.on('enter', this.changeClass)
+        this.setRouter();
     },
-
+    
     onrender: function() {
     },
 
@@ -26,5 +28,27 @@ module.exports = function() {
         console.log('clicked');
         this.toggle('flip');
     },
+
+    setRouter: function(){
+        var self = this;
+
+        page('/', function () {
+            self.set('view', 'home');
+        });
+
+        page('/projects', function () {
+            self.set('view', 'projects');
+        });
+
+        page('/info', function () {
+            self.set('view', 'info');
+        });
+
+        page({
+            click: false,
+            dispatch: true,
+            hashbang: false,
+        });
+    }
   });
 };

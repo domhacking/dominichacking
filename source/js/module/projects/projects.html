@@ -1,34 +1,21 @@
+
 <!--
-  @module:   projects
-  @scss:     ./source/css/module/projects.scss
-  @js:       ./source/js/module/projects/projects.js
+@module:   projects
+@scss:     ./source/css/module/projects.scss
+@js:       ./source/js/module/projects/projects.js
 -->
 
 <div class="projects">
-    <section class="tab-pane tab-pane--projects" id="projects">
-      <div class="content">
-          <div class="content--container">
-              <div class="project">
-                  <a href="http://report-it.tumblr.com/"><div class="websiteThumbnail websiteThumbnail-tfl"></div></a>
-                  <h3>TFL</h3>
-                  <a href="http://report-it.tumblr.com/">report-it.tumblr.com</a>
-              </div>
-              <div class="project">
-                  <a href="http://loweandcoproperties.com/"><div class="websiteThumbnail websiteThumbnail-lowe"></div></a>
-                  <h3>Lowe and Co Properties</h3>
-                  <a href="http://loweandcoproperties.com/">loweandcoproperties.com</a>
-              </div>
-              <div class="project">
-                  <a href="http://nepaldonationbox.com/"><div class="websiteThumbnail websiteThumbnail-nepal"></div></a>
-                  <h3>Nepal Donataion Box</h3>
-                  <a href="http://nepaldonationbox.com/">nepaldonationbox.com</a>
-              </div>
-              <div class="project">
-                  <a href="development.mymillenials.divshot.io"><div class="websiteThumbnail websiteThumbnail-millenials"></div></a>
-                  <h3>The Millenials</h3>
-                  <a href="http://development.mymillenials.divshot.io">themillenials.com</a>
-              </div>
-          </div>
-      </div>
-  </section>
+    <div class="content">
+        <div class="content--container">
+
+            {{ #projects }}
+                <div class="project">
+                    <a href="{{link}}" target="_blank"><div class="websiteThumbnail websiteThumbnail-{{class}}"></div></a>
+                    <h3>{{websiteName}}</h3>
+                    <a href="{{link}}" target="_blank">{{linkName}}</a>
+                </div>
+            {{/}}
+        </div>
+    </div>
 </div>
