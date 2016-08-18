@@ -20,7 +20,7 @@ module.exports = function() {
         this.on('enter', this.changeClass)
         this.setRouter();
     },
-    
+
     onrender: function() {
     },
 
@@ -32,15 +32,15 @@ module.exports = function() {
     setRouter: function(){
         var self = this;
 
-        page('/', function () {
-            self.set('view', 'home');
-        });
+        // page('/', function () {
+        //     self.set('view', 'home');
+        // });
 
         page('/projects', function () {
             self.set('view', 'projects');
         });
 
-        page('/info', function () {
+        page('/', function () {
             self.set('view', 'info');
         });
 

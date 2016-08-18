@@ -40,6 +40,13 @@
     }
 }
 
+.block{
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+}
+
 .back{
     background-color: $color-background;
     backface-visibility: hidden;
@@ -53,19 +60,6 @@
     width: 100%;
 
 
-    .block{
-        position: absolute;
-        top: 50%;
-        left: 50%;
-        transform: translate(-50%, -50%);
-
-
-    }
-    
-    .block__content{
-
-
-    }
     section{
         display: none;
 
