@@ -6,6 +6,36 @@
 -->
 
 <div class="projects">
+    <!-- <div class="project">
+        <div class="slide slide--one" id="slide-one"></div>
+        <div class="slide slide--two"></div>
+        <div class="slide slide--three"></div>
+    </div> -->
+
+    <section class="opening">
+        <h1>MY PROJECTS</h1>
+    </section>
+
+    {{ #projects }}
+        <div id="pinContainer">
+        	<div id="slideContainer">
+        		<section class="panel blue">
+        			<b>ONE</b>
+        		</section>
+        		<section class="panel turqoise">
+        			<b>TWO</b>
+        		</section>
+        		<section class="panel green">
+        			<b>THREE</b>
+        		</section>
+        	</div>
+        </div>
+    {{/}}
+</div>
+
+
+
+<!-- <div class="projects">
     <div class="content">
         <div class="content--container">
 
@@ -18,4 +48,4 @@
             {{/}}
         </div>
     </div>
-</div>
+</div> -->

@@ -7,60 +7,124 @@
 
 @include module("projects") {
 
-    .project{
-        display: inline-block;
-        margin: 0 auto;
-        vertical-align: top;
-        width: 300px;
-        padding-bottom: 25px;
-        text-align: center;
-        // border: 1px solid white;
+
+    height: 100%;
+    width: 100%;
+    // display: block;
+    // position: relative;
+
+    .opening{
+        height: 100%;
+        width: 100%;
     }
 
-    .websiteThumbnail{
-        height: 110px;
-        width: 220px;
-        border: 1px solid white;
-        margin: 0 auto;
-
-        &:hover{
-            background-color: rgba(1,2,1,0.8);
-            z-index: 2;
-        }
-
-        &.websiteThumbnail-dot{
-            background: url(../img/dot-website.jpg) no-repeat;
-            background-size: 100% auto;
-        }
-        &.websiteThumbnail-masAurelia{
-            background: url(../img/masaurelia-website.jpg) no-repeat;
-            background-size: 100% auto;
-        }
-        &.websiteThumbnail-tfl{
-            background: url(../img/tfl-thumbnail.jpg) no-repeat;
-            background-size: 100% auto;
-        }
-        &.websiteThumbnail-nepal{
-            background: url(../img/nepal-thumbnail.jpg) no-repeat;
-            background-size: 100% auto;
-        }
-        &.websiteThumbnail-mindbody{
-            background: url(../img/mindbody-website.jpg) no-repeat;
-            background-size: 100% auto;
-        }
-        &.websiteThumbnail-neighbourhood{
-            background: url(../img/neighbourhood-website.jpg) no-repeat;
-            background-size: 100% auto;
-        }
-        &.websiteThumbnail-jlr{
-            background: url(../img/jlr-website.jpg) no-repeat;
-            background-size: 100% auto;
-        }
+    #pinContainer {
+        width: 100%;
+        height: 100%;
+        overflow: hidden;
+        -webkit-perspective: 1000;
+        perspective: 1000;
+    }
+    #slideContainer {
+        width: 300%; /* to contain 4 panels, each with 100% of window width */
+        height: 200%;
+    }
+    .panel {
+        height: 100%;
+        width: 33.3%; /* relative to parent -> 25% of 400% = 100% of window width */
+        float: left;
     }
 
-    h3{
-        padding-top: 10px;
+    .blue{
+        background-color: blue;
     }
+    .turqoise{
+        background-color: yellow;
+    }
+    .green{
+        background-color: green;
+    }
+    .bordeaux{
+        background-color: red;
+    }
+
+    //
+    // .project{
+    //     height: 100%;
+    //     width: 100%;
+    //     display: block;
+    //     position: relative;
+    // }
+    //
+    // .slide{
+    //     height: 100%;
+    //     width: 100%;
+    //
+    //     &--one{
+    //         background-color: red;
+    //     }
+    //     &--two{
+    //         background-color: blue;
+    //     }
+    //     &--three{
+    //         background-color: green;
+    //     }
+    // }
+
+    // .project{
+    //     display: inline-block;
+    //     margin: 0 auto;
+    //     vertical-align: top;
+    //     width: 300px;
+    //     padding-bottom: 25px;
+    //     text-align: center;
+    //     // border: 1px solid white;
+    // }
+    //
+    // .websiteThumbnail{
+    //     height: 110px;
+    //     width: 220px;
+    //     border: 1px solid white;
+    //     margin: 0 auto;
+    //
+    //     &:hover{
+    //         background-color: rgba(1,2,1,0.8);
+    //         z-index: 2;
+    //     }
+    //
+    //     &.websiteThumbnail-dot{
+    //         background: url(../img/dot-website.jpg) no-repeat;
+    //         background-size: 100% auto;
+    //     }
+    //     &.websiteThumbnail-masAurelia{
+    //         background: url(../img/masaurelia-website.jpg) no-repeat;
+    //         background-size: 100% auto;
+    //     }
+    //     &.websiteThumbnail-tfl{
+    //         background: url(../img/tfl-thumbnail.jpg) no-repeat;
+    //         background-size: 100% auto;
+    //     }
+    //     &.websiteThumbnail-nepal{
+    //         background: url(../img/nepal-thumbnail.jpg) no-repeat;
+    //         background-size: 100% auto;
+    //     }
+    //     &.websiteThumbnail-mindbody{
+    //         background: url(../img/mindbody-website.jpg) no-repeat;
+    //         background-size: 100% auto;
+    //     }
+    //     &.websiteThumbnail-neighbourhood{
+    //         background: url(../img/neighbourhood-website.jpg) no-repeat;
+    //         background-size: 100% auto;
+    //     }
+    //     &.websiteThumbnail-jlr{
+    //         background: url(../img/jlr-website.jpg) no-repeat;
+    //         background-size: 100% auto;
+    //     }
+    // }
+    //
+    // h3{
+    //     padding-top: 10px;
+    // }
 }
 
 // @media screen and (min-width:800px){
